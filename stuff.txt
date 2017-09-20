@@ -1,0 +1,77 @@
+TO_DO:
+
+-> NORMALIZE SPEED VECTOR
+
+Given two parents, our reproduction operators (could also call these crossover operators) included:
+
+Swap either single weights or all weights for a given neuron in the network. So for example, given two parents selected for reproduction either choose a particular weight in the network and swap the value (for our swaps we produced two offspring and then chose the one with the best fitness to survive in the next generation of the population), or choose a particular neuron in the network and swap all the weights for that neuron to produce two offspring.
+swap an entire layer's weights. So given parents A and B, choose a particular layer (the same layer in both) and swap all the weights between them to produce two offsping. This is a large move so we set it up so that this operation would be selected less often than the others. Also, this may not make sense if your network only has a few layers.
+Our mutation operators operated on a single network and would select a random weight and either:
+
+completely replace it with a new random value
+change the weight by some percentage. (multiply the weight by some random number between 0 and 2 - practically speaking we would tend to constrain that a bit and multiply it by a random number between 0.5 and 1.5. This has the effect of scaling the weight so that it doesn't change as radically. You could also do this kind of operation by scaling all the weights of a particular neuron.
+add or subtract a random number between 0 and 1 to/from the weight.
+Change the sign of a weight.
+swap weights on a single neuron.
+You can certainly get creative with mutation operators, you may discover something that works better for your particular problem.
+
+IIRC, we would choose two parents from the population based on random proportional selection, then ran mutation operations on each of them and then ran these mutated parents through the reproduction operation and ran the two offspring through the fitness function to select the fittest one to go into the next generation population.
+
+Of course, in your case since you're also evolving the topology some of these reproduction operations above won't make much sense because two selected parents could have completely different topologies. In NEAT (as I understand it) you can have connections between non-contiguous layers of the network, so for example you can have a layer 1 neuron feed another in layer 4, instead of feeding directly to layer 2. That makes swapping operations involving all the weights of a neuron more difficult - you could try to choose two neurons in the network that have the same number of weights, or just stick to swapping single weights in the network.
+
+I know that while training a NE, usually the backpropagation algorithm is used to correct the weights
+Actually, in NE backprop isn't used. It's the mutations performed by the GA that are training the network as an alternative to backprop. In our case backprop was problematic due to some "unorthodox" additions to the network which I won't go into. However, if backprop had been possible, I would have gone with that. The genetic approach to training NNs definitely seems to proceed much more slowly than backprop probably would have. Also, when using an evolutionary method for adjusting weights of the network, you start needing to tweak various parameters of the GA like crossover and mutation rates.
+
+SOME COOL GENES (FOR GOAL AT (50/50), PRIMITIVE TRAINING):
+
+1)
+    [[[0.05185407655265539, 0.040188228387161136, 0.32830543417331615, 0.08693103964455486], [0.2946548830690527, -1.5722753232607247, 2.2682282373596294, 0.872916007121372], [0.232872338638075, 0.07363917392800179, 0.517202438720071, 0.27806634577116707], [0.20139975647608377, 0.03389029656679684, -2, 0.12108742242442061]], [[0.10155392329071422, 0.1316837873815564, 0.05509100016875729, 0.6904338275392449], [-0.3604843217751278, 0.2987455472641173, 0.0441458663449739, 0.06022403858923657], [0.1073051057957618, 0.9166899403924783, -0.5287725657187559, 0.9792556543234366]]]
+
+2)
+
+    [[[0.020543032093350178, 0.10057609756827923, 0.5099494975712175, 0.08031662547487695], [0.6845348378555629, 0.4109390687493135, -0.31414569079283605, 0.07342338041944685], [0.2128000077334299, 0.8861528772527634, 0.1170662211024951, 0.9632398218431406], [0.9793326584782538, 0.7308138484990155, 0.21312017156870744, 0.8479564270921883]], [[-0.006288044220313593, 0.983245181932415, 0.34261081830779894, 0], [0.7742842033945372, -3, 0.2974144627400891, 0.3675191889905959], [0.866427727558702, 0.22572786120489363, 0.212406144516479, 0.8392856073366864]]]
+
+3)
+
+    [[[0.868113022224412, 0.20517585565321417, -2.743438457263255, 0.9043615303464313], [0.23943098552390574, -0.6366349841089172, 3.6390392515295424, -0.1659304871105517], [-0.1319518823725715, 0.6934512253568957, 0.3184056475592233, 0.9201242113702289], [0.034853809560901894, -0.11168933563161976, -3, 1.1750048282168486]], [[0.5703215387091948, 0.1502562864381708, 0.2110875034708689, 0.07078431799473728], [2, 0.558184174284632, 0.25410642578594667, -0.4328021526747554], [1, 0.03432583267553546, -0.13860142813070975, 0.846148441151862]]]
+
+4)
+
+    [[[0.6144596887139955, 0.9902804744637421, 0.3958097314555914, 0.7716611524581798], [0.3948799034227507, -0.06278482985196021, 0.23206443519359787, 0.2963312919669132], [0.5233227637291228, 0.2764034436992978, 0.9502770582991402, -1], [0.08972028148004219, 0.004238070402260447, 0.8576858205663569, 0.08440920738733615]], [[0.1577991725030136, -1, 0.0871662958201419, 0.7060335246689725], [-0.36392176512150864, 0.8479524215337519, 0.24218567767689259, 0.0023409909991768396], [0.0493593236394716, 0.11192359388981399, 0.31847057777055465, 1]]]
+
+5)
+
+    [[[0.06963483767140644, 0.04637736865034836, 0.4179373891255692, 0.08459950378264906], [0.21731089048421204, 0.22793384091227945, 0.336249888100033, 0.5360488810199333], [0.7126057022125074, 0.3425105223624144, 0.05017149259556545, 0.8031129095875376], [0.8956799981890163, 1, 0.6197044096730842, 0.960041220043114]], [[0.15396299037069128, 0.4583023634311334, 0.699531142973071, 0.5082878802660132], [0.04005432048121015, 0.44651398564156297, -0.49340022750961443, 0.1048292423229733], [0.80673467972112, 0.4593124829189732, 0.9699691524871863, 0.32275424692158716]]]
+
+
+PREVIOUS TRAININGS:
+
+------------------------------------------------------------------------------ FIRST TRAINING ---------------------------------------------------------------------------------------
+
+WIDTH, HEIGHT = 800, 500
+GOAL = (50, 50)
+FRICTION = 0.01
+NN_LAYOUT = [ [0, 0, 0, 0], [4, 4, 4, 4], [4, 4, 4] ]
+POD_POPULATION = 500
+PODS = [SmartPod(NN(NN_LAYOUT), sf.Vector2(WIDTH / 2, HEIGHT / 2), sf.Vector2(1, 10), 0.1, 3) for i in xrange(POD_POPULATION)]
+TRAINING_TIME = 10
+new_engine_values = p.nn.feedForward([GOAL[0] - p.rect.position.x, GOAL[1] - p.rect.position.y, p.velocity, p.rect.rotation])
+
+def getFitness(self):
+
+      distance_from__goal = math.sqrt( (GOAL[0] - self.rect.position.x) ** 2 + (GOAL[1] - self.rect.position.y) ** 2)
+      #distance_from_start = (WIDTH / 2 - self.rect.position.x) ** 2 + (HEIGHT / 2 - self.rect.position.y) ** 2
+      self.fitness = 1000.0 - distance_from__goal
+
+      if self.dead:
+          self.fitness *= 0.8
+
+      if not self.hasFiredMainEngine:
+          self.fitness *= 0
+
+      return self.fitness
+
+RESULTS:  Avg Fitness -> ~505.04
+          Max Fitness -> ~999.85
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
