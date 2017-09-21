@@ -1,4 +1,5 @@
 from pods import *
+from goal import *
 import sys, time
 
 def natural_selection(pods):
@@ -26,9 +27,8 @@ def natural_selection(pods):
                         np.nn.weights[i][j][k] *= random.random() + 1
                     elif r <= 8:
                         np.nn.weights[i][j][k] *= random.random()
-
-
-
+                    elif r <= 10:
+                        np.nn.weights[i][j][k] += (random.random() - 0.5) * 2
 
         new_pods.append(np)
 
@@ -38,12 +38,6 @@ def natural_selection(pods):
 WINDOW = sf.RenderWindow(sf.VideoMode(PARAM.WIDTH, PARAM.HEIGHT), unicode("SmartPods"))
 WINDOW.framerate_limit = PARAM.MAX_FRAMERATE
 WINDOW.key_repeat_enabled = False
-G_GRAPHIC = sf.CircleShape(2)
-G_GRAPHIC.origin = ((1, 1))
-G_GRAPHIC.fill_color = sf.Color.RED
-G_GRAPHIC.outline_color = sf.Color.BLUE
-G_GRAPHIC.outline_thickness = 1
-G_GRAPHIC.position = PARAM.GOAL
 PODS = [SmartPod(NN(PARAM.NN_LAYOUT), sf.Vector2(PARAM.START_POSITION[0], PARAM.START_POSITION[1]), sf.Vector2(PARAM.POD_SIZE[0], PARAM.POD_SIZE[1]), PARAM.POD_ACCELERATION, PARAM.POD_ANGULAR_SPEED) for i in xrange(PARAM.POD_POPULATION)]
 TRAINING_PODS = list(PODS)
 FITNESSES = []
@@ -59,12 +53,12 @@ SANDBOX_PODS = []
 SANDBOX_CIRCLES = []
 
 for c in PARAM.CIRCLES:
-    radius = 1
-    circ = sf.CircleShape(radius, 10)
+    radius = 0.5
+    circ = sf.CircleShape(radius, 20)
     circ.origin = ((radius, radius))
-    circ.fill_color = sf.Color.YELLOW
-    circ.outline_color = sf.Color.RED
-    circ.outline_thickness = 0.5
+    circ.fill_color = sf.Color.RED
+    circ.outline_color = sf.Color.YELLOW
+    circ.outline_thickness = 0
     circ.position = c
     SANDBOX_CIRCLES.append(circ)
 
@@ -193,7 +187,7 @@ while WINDOW.is_open:
                 PLAYER_POD.update(PARAM.GRAVITY, PARAM.FRICTION)
 
         PLAYER_POD.calculateSenserPoints()
-        PLAYER_POD.getSenserInfo(TEST_PODS)
+        PLAYER_POD.getSenserInfo(TEST_PODS + [GOAL])
 
         PLAYER_POD.draw(WINDOW)
 
@@ -210,7 +204,7 @@ while WINDOW.is_open:
 
 
     SCREEN_OUTLINE.draw(WINDOW)
-    WINDOW.draw(G_GRAPHIC)
+    GOAL.draw(WINDOW)
     WINDOW.display()
 
     DELTA_TIME = DELTA_CLOCK.restart()

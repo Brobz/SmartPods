@@ -4,19 +4,11 @@ class NN(object):
 
     """
     >> Layers:
-    -- [ [0, 0, 0, 0], [4, 4, 4, -1], [4, 4, -1], [3, 3] ]
+    -- [ [0, 0, 0, 0], [4, 4, 4, 4], [4, 4, 4], [3, 3] ]
     >> Each array is a layer;
     >> Each number is the number of weights attached to this neuron;
-    >> 0 means none, -1 means bias neuron (constant)
+    >> 0 means none, -1 means bias neuron (constant) */ TO BE ADDED AND FIXED /*
         -- Bias neurons must always be placed as the last neuron of a layer
-
-
-    nn = NN([ [0, 0, 0, 0], [4, 4, 4, -1], [4, 4, -1], [3, 3] ])
-
-    #print nn.neurons
-    #print nn.weights
-
-    print nn.feedForward([1, 1, 1, 1])
 
     """
 
@@ -75,6 +67,5 @@ class NN(object):
                     value += self.weights[l - 1][n][pn] * self.neurons[l - 1][pn]
 
                 self.neurons[l][n] = self.sigmoid(value)
-                #print self.neurons
 
         return self.neurons[len(self.neurons) - 1]

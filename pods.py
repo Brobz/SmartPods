@@ -1,13 +1,12 @@
 import parameters as PARAM
 from nn import *
-from sfml import sf
+from obstacle import *
 
-class SmartPod(object):
+class SmartPod(Obstacle):
     def __init__(self, nn, pos, size, acc, ang_speed, color = sf.Color.BLACK):
-        self.nn = nn
+        Obstacle.__init__(self, pos, size, acc, ang_speed, color = sf.Color.BLACK)
 
-        self.acceleration = acc
-        self.angular_speed = ang_speed
+        self.nn = nn
 
         self.mutation_rate = random.random()
         self.cross_rate = random.random()
@@ -18,51 +17,19 @@ class SmartPod(object):
         self.fitness = 0
         self.ticks = 0
 
-        self.speed = 0
-        self.velocity = sf.Vector2(0, 0)
-
-        self.rect = sf.RectangleShape(size)
-        self.rect.fill_color = color
-        self.rect.outline_color = sf.Color.BLACK
-        self.rect.outline_thickness = 0.2
-        self.rect.position = pos
-        self.rect.origin = (size.x / 2.0, size.y / 2.0)
-
         self.engines = [0, 0, 0]
         self.hasFiredMainEngine = False
 
-        self.calculateCorners()
-        self.calculateAxis()
+        self.senser_layers = 5
+        self.senser_dist = 20
+        self.angle_variance = 20
+        self.angle_span = 140
+
         self.calculateSenserPoints()
 
-    def calculateCorners(self):
-        self.theta = - self.rect.rotation * math.pi / 180.0
-
-        self.top_left_corner_x = self.rect.position.x - self.rect.size.x / 2.0 * math.cos(self.theta) - self.rect.size.y / 2.0 * math.sin(self.theta)
-        self.top_left_corner_y = self.rect.position.y + self.rect.size.x / 2.0 * math.sin(self.theta) - self.rect.size.y / 2.0 * math.cos(self.theta)
-
-        self.top_right_corner_x = self.rect.position.x + self.rect.size.x / 2.0 * math.cos(self.theta) - self.rect.size.y / 2.0 * math.sin(self.theta)
-        self.top_right_corner_y = self.rect.position.y - self.rect.size.x / 2.0 * math.sin(self.theta) - self.rect.size.y / 2.0 * math.cos(self.theta)
-
-        self.bot_right_corner_x = self.rect.position.x + self.rect.size.x / 2.0 * math.cos(self.theta) + self.rect.size.y / 2.0 * math.sin(self.theta)
-        self.bot_right_corner_y = self.rect.position.y - self.rect.size.x / 2.0 * math.sin(self.theta) + self.rect.size.y / 2.0 * math.cos(self.theta)
-
-        self.bot_left_corner_x = self.rect.position.x - self.rect.size.x / 2.0 * math.cos(self.theta) + self.rect.size.y / 2.0 * math.sin(self.theta)
-        self.bot_left_corner_y = self.rect.position.y + self.rect.size.x / 2.0 * math.sin(self.theta) + self.rect.size.y / 2.0 * math.cos(self.theta)
-
-        self.corners = [sf.Vector2(self.top_left_corner_x, self.top_left_corner_y), sf.Vector2(self.top_right_corner_x, self.top_right_corner_y), sf.Vector2(self.bot_right_corner_x, self.bot_right_corner_y), sf.Vector2(self.bot_left_corner_x, self.bot_left_corner_y)]
-
-    def calculateAxis(self):
-        self.AB_axis = sf.Vector2(self.top_right_corner_x - self.top_left_corner_x, self.top_right_corner_y - self.top_left_corner_y)
-        self.BC_axis = sf.Vector2(self.bot_right_corner_x - self.top_right_corner_x, self.bot_right_corner_y - self.top_right_corner_y)
-
-        self.axis = [self.AB_axis, self.BC_axis]
+        self.ID = -1
 
     def calculateSenserPoints(self):
-        self.senser_layers = 4
-        self.senser_dist = 5
-        self.angle_variance = 15
-        self.angle_span = 90
         self.angle_variance_rad = self.angle_variance * math.pi / 180.0
         self.theta = - self.rect.rotation * math.pi / 180.0
         self.senser_origin = sf.Vector2(self.rect.position.x - math.sin(self.theta) * self.rect.size.y / 2.0, self.rect.position.y - math.cos(self.theta) * self.rect.size.y  / 2.0)
@@ -71,48 +38,41 @@ class SmartPod(object):
         for i in xrange(self.senser_layers):
             self.senser_points.append([])
             for j in xrange(self.angle_span / self.angle_variance):
-                theta_p = (-self.theta - 90 * math.pi / 180.0 - self.angle_variance_rad * (self.angle_span / self.angle_variance * 0.5)) + self.angle_variance_rad * j
+                theta_p = (-self.theta - 90 * math.pi / 180.0 - self.angle_variance_rad * (self.angle_span / self.angle_variance / 2)) + self.angle_variance_rad * j
                 senser_pos = sf.Vector2(self.senser_origin.x + self.senser_dist * (i + 1) * math.cos(theta_p), self.senser_origin.y + self.senser_dist * (i + 1) * math.sin(theta_p))
                 self.senser_points[i].append(senser_pos)
 
         PARAM.CIRCLES = [(self.senser_points[i][j].x, self.senser_points[i][j].y) for j in xrange(self.angle_span / self.angle_variance) for i in xrange(self.senser_layers)]
+
     def getSenserInfo(self, colliders):
-        _info = []
+        _info = [0 for i in xrange(self.angle_span / self.angle_variance)]
         self.calculateCorners()
         self.calculateAxis()
         for i in xrange(len(self.senser_points)):
-            for m in self.senser_points[i]:
+            for j in xrange(len(self.senser_points[i])):
                 for c in colliders:
-                    c.calculateCorners()
-                    c.calculateAxis()
-                    if c.isPointInside(m):
+                    try:
+                        if (math.fabs(c.acceleration) or math.fabs(c.angular_speed)):
+                            c.calculateCorners()
+                            c.calculateAxis()
+                    except:
+                        pass
+                    if c.isPointInside(self.senser_points[i][j]):
                         ## SENSOR IS INSIDE SMTH;
                         ## ADD INFO TO _INFO ARRAY
-                        print "IN"
+                        if math.fabs(_info[j]) < (len(self.senser_points) / (i + 1.0)) * 10:
+                            _info[j] = (len(self.senser_points) / (i + 1.0)) * 10 * c.ID
 
-
+        #print _info
         return _info
 
-    def isPointInside(self, m):
-        AM_axis = sf.Vector2(m.x - self.top_left_corner_x, m.y - self.top_left_corner_y)
-        BM_axis = sf.Vector2(m.x - self.top_right_corner_x, m.y - self.top_right_corner_y)
-        AB_AM_dot = self.AB_axis.x * AM_axis.x + self.AB_axis.y * AM_axis.y
-        BC_BM_dot = self.BC_axis.x * BM_axis.x + self.BC_axis.y * BM_axis.y
-
-        if 0 <= AB_AM_dot and AB_AM_dot <= self.AB_axis.x ** 2 + self.AB_axis.y ** 2 and 0 <= BC_BM_dot and BC_BM_dot <= self.BC_axis.x ** 2 + self.BC_axis.y ** 2:
-            return True
-
-        return False
-
     def reset(self, pos):
+        Obstacle.reset(self, pos)
         self.dead = False
         self.hit_target = False
         self.collided = False
         self.ticks = 0
         self.speed = 0
-        self.velocity = sf.Vector2(0, 0)
-        self.rect.position = pos
-        self.rect.rotation = 0
         self.engines = [0, 0, 0]
         self.hasFiredMainEngine = False
 
@@ -274,18 +234,3 @@ TEST_PODS = [TEST_POD_0]
 for tp in TEST_PODS:
     tp.calculateCorners()
     tp.calculateAxis()
-
-TRAINING_OBSTACLE_0 = SmartPod(NN(PARAM.NN_LAYOUT), sf.Vector2(PARAM.WIDTH - 150, 400), sf.Vector2(1, 650), 0.0, 0.0)
-TRAINING_OBSTACLE_0.rect.rotation = 10
-TRAINING_OBSTACLE_1 = SmartPod(NN(PARAM.NN_LAYOUT), sf.Vector2(PARAM.WIDTH - 100, 50), sf.Vector2(1, 350), 0.0, 0.0)
-TRAINING_OBSTACLE_1.rect.rotation = -45
-TRAINING_OBSTACLE_2 = SmartPod(NN(PARAM.NN_LAYOUT), sf.Vector2(PARAM.WIDTH / 2.0 - 50, 150), sf.Vector2(1, PARAM.WIDTH), 0.0, 0.0)
-TRAINING_OBSTACLE_2.rect.rotation = -75
-TRAINING_OBSTACLE_3 = SmartPod(NN(PARAM.NN_LAYOUT), sf.Vector2(PARAM.WIDTH / 2.0 - 50, 0), sf.Vector2(1, PARAM.WIDTH), 0.0, 0.0)
-TRAINING_OBSTACLE_3.rect.rotation = 83
-
-TRAINING_OBSTACLES = [TRAINING_OBSTACLE_0, TRAINING_OBSTACLE_1, TRAINING_OBSTACLE_2, TRAINING_OBSTACLE_3]
-
-for to in TRAINING_OBSTACLES:
-    to.calculateCorners()
-    to.calculateAxis()
