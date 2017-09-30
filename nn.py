@@ -1,5 +1,4 @@
 import random, math, copy
-
 class NN(object):
 
     """
@@ -7,7 +6,7 @@ class NN(object):
     -- [ [0, 0, 0, 0], [4, 4, 4, 4], [4, 4, 4], [3, 3] ]
     >> Each array is a layer;
     >> Each number is the number of weights attached to this neuron;
-    >> 0 means none, -1 means bias neuron (constant) */ TO BE ADDED AND FIXED /*
+    >> 0 means none, -1 means bias neuron (constant)
         -- Bias neurons must always be placed as the last neuron of a layer
 
     """
@@ -59,13 +58,25 @@ class NN(object):
         for l in xrange(1, len(self.neurons)):
             for n in xrange(len(self.neurons[l])):
                 value = 0
+
                 for pn in xrange(len(self.neurons[l - 1])):
                     if not len(self.weights[l - 1][n]):
-                        value += self.neurons[l - 1][len(self.neurons[l - 1]) - 1]
                         break
 
                     value += self.weights[l - 1][n][pn] * self.neurons[l - 1][pn]
 
                 self.neurons[l][n] = self.sigmoid(value)
 
+                if self.layers[l][n] == -1:
+                    self.neurons[l][n] = 1
+
         return self.neurons[len(self.neurons) - 1]
+
+"""
+nn = NN([[0, 0, 0], [3, 3, -1], [3, 3]])
+
+print nn.neurons
+print nn.weights
+nn.feedForward([1, 1, 1])
+print nn.neurons
+"""

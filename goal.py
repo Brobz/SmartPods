@@ -5,6 +5,9 @@ from sfml import sf
 
 class Goal(object):
     def __init__(self, pos, radius, acc, color = sf.Color.BLACK):
+
+        self.params = [pos, radius, acc]
+
         self.acceleration = acc
 
         self.speed = 0
@@ -39,10 +42,12 @@ class Goal(object):
         # This causes a "always on reverse" effect. Pretty Cool
         self.addSpeed(g)
 
+        #self.addSpeed(-self.acceleration * (random.random() - 0.5))
+
         self.addSpeed(-self.speed * ar)
 
-        self.velocity.x = self.speed * math.sin(- self.rect.rotation * math.pi / 180)
-        self.velocity.y = self.speed * math.cos(- self.rect.rotation * math.pi / 180)
+        self.velocity.x = self.speed * math.sin(- self.circle.rotation * math.pi / 180)
+        self.velocity.y = self.speed * math.cos(- self.circle.rotation * math.pi / 180)
 
         # This causes a more "gravity-like" feeling. Weird behaviour when turning.
         # Gets weirder for higher levels of g.
@@ -53,4 +58,4 @@ class Goal(object):
     def draw(self, window):
         window.draw(self.circle)
 
-GOAL = Goal(PARAM.GOAL, 2, 0, sf.Color.RED)
+GOALS = [Goal((random.randrange(100, 700), random.randrange(100, 400)), 5, 0.0, sf.Color.RED) for i in xrange(PARAM.GOAL_POPULATION)]

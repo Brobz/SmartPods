@@ -4,6 +4,8 @@ from sfml import sf
 
 class Obstacle(object):
     def __init__(self, pos, size, acc, ang_speed, color = sf.Color.BLACK):
+        self.params = [pos, size, acc, ang_speed, 0]
+
         self.acceleration = acc
         self.angular_speed = ang_speed
 
@@ -13,14 +15,18 @@ class Obstacle(object):
         self.rect = sf.RectangleShape(size)
         self.rect.fill_color = color
         self.rect.outline_color = sf.Color.BLACK
-        self.rect.outline_thickness = 1
+        self.rect.outline_thickness = 0
         self.rect.position = pos
-        self.rect.origin = (size.x / 2.0, size.y / 2.0)
+        self.rect.origin = (size[0] / 2.0, size[1] / 2.0)
 
         self.calculateCorners()
         self.calculateAxis()
 
         self.ID = -1
+
+
+    def getParams(self):
+        self.params = [(self.rect.position.x, self.rect.position.y), (self.rect.size.x, self.rect.size.y), self.acceleration, self.angular_speed, self.rect.rotation]
 
     def calculateCorners(self):
         self.theta = - self.rect.rotation * math.pi / 180.0
@@ -152,18 +158,32 @@ class Obstacle(object):
         return True
 
 
+SCREEN_OUTLINE = Obstacle((PARAM.WIDTH / 2.0, PARAM.HEIGHT / 2.0), (PARAM.WIDTH - 3, PARAM.HEIGHT - 3), 0.0, 0.0)
+SCREEN_OUTLINE.rect.fill_color = sf.Color.TRANSPARENT
+SCREEN_OUTLINE.rect.outline_color = sf.Color.RED
+SCREEN_OUTLINE.rect.outline_thickness = 3
 
-TRAINING_OBSTACLE_0 = Obstacle(sf.Vector2(PARAM.WIDTH - 150, 400), sf.Vector2(1, 650), 0.0, 0.0)
-TRAINING_OBSTACLE_0.rect.rotation = 10
-TRAINING_OBSTACLE_1 = Obstacle(sf.Vector2(PARAM.WIDTH - 100, 50), sf.Vector2(1, 350), 0.0, 0.0)
-TRAINING_OBSTACLE_1.rect.rotation = -45
-TRAINING_OBSTACLE_2 = Obstacle(sf.Vector2(PARAM.WIDTH / 2.0 - 50, 150), sf.Vector2(1, PARAM.WIDTH), 0.0, 0.0)
-TRAINING_OBSTACLE_2.rect.rotation = -75
-TRAINING_OBSTACLE_3 = Obstacle(sf.Vector2(PARAM.WIDTH / 2.0 - 50, 0), sf.Vector2(1, PARAM.WIDTH), 0.0, 0.0)
-TRAINING_OBSTACLE_3.rect.rotation = 83
+TRAINING_OBSTACLE_0 = Obstacle((PARAM.WIDTH  / 2.0, - 20), (PARAM.WIDTH, 50), 0.0, 0.0)
+TRAINING_OBSTACLE_1 = Obstacle((PARAM.WIDTH  / 2.0, PARAM.HEIGHT + 20), (PARAM.WIDTH, 50), 0.0, 0.0)
+TRAINING_OBSTACLE_2 = Obstacle((- 20, PARAM.HEIGHT  / 2.0), (50, PARAM.HEIGHT), 0.0, 0.0)
+TRAINING_OBSTACLE_3 = Obstacle((PARAM.WIDTH + 20, PARAM.HEIGHT  / 2.0), (50, PARAM.HEIGHT), 0.0, 0.0)
+TRAINING_OBSTACLE_4 = Obstacle((PARAM.WIDTH / 2.0 - 200, PARAM.HEIGHT  / 2.0), (10, PARAM.HEIGHT), 0.0, 0.0)
+TRAINING_OBSTACLE_4.rect.rotation = -45
+TRAINING_OBSTACLE_5 = Obstacle((PARAM.WIDTH / 2.0 + 200, PARAM.HEIGHT  / 2.0 + 100), (10, PARAM.HEIGHT), 0.0, 0.0)
+TRAINING_OBSTACLE_5.rect.rotation = 80
+TRAINING_OBSTACLE_6 = Obstacle((PARAM.WIDTH / 2.0, PARAM.HEIGHT  / 2.0), (10, PARAM.WIDTH + 200), 0.0, 1.5)
+TRAINING_OBSTACLE_6.rect.rotation = -35
+"""
+TRAINING_OBSTACLE_0 = Obstacle((PARAM.WIDTH  / 2.0, PARAM.HEIGHT / 2.0 - 200), (PARAM.WIDTH, 10), 0.0, 0.0)
+TRAINING_OBSTACLE_1 = Obstacle((PARAM.WIDTH  / 2.0, PARAM.HEIGHT / 2.0 + 200), (PARAM.WIDTH, 10), 0.0, 0.0)
+TRAINING_OBSTACLE_2 = Obstacle((PARAM.WIDTH / 2.0 - 300, PARAM.HEIGHT  / 2.0), (10, PARAM.HEIGHT), 0.0, 0.0)
+TRAINING_OBSTACLE_3 = Obstacle((PARAM.WIDTH / 2.0 + 300, PARAM.HEIGHT  / 2.0), (10, PARAM.HEIGHT), 0.0, 0.0)
+"""
 
+# TRAINING_OBSTACLES = [TRAINING_OBSTACLE_0, TRAINING_OBSTACLE_1, TRAINING_OBSTACLE_2, TRAINING_OBSTACLE_3, TRAINING_OBSTACLE_6]
 TRAINING_OBSTACLES = [TRAINING_OBSTACLE_0, TRAINING_OBSTACLE_1, TRAINING_OBSTACLE_2, TRAINING_OBSTACLE_3]
 
 for to in TRAINING_OBSTACLES:
     to.calculateCorners()
     to.calculateAxis()
+    to.getParams()

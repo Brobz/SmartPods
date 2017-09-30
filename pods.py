@@ -3,8 +3,8 @@ from nn import *
 from obstacle import *
 
 class SmartPod(Obstacle):
-    def __init__(self, nn, pos, size, acc, ang_speed, color = sf.Color.BLACK):
-        Obstacle.__init__(self, pos, size, acc, ang_speed, color = sf.Color.BLACK)
+    def __init__(self, nn, pos, size, acc, ang_speed, color = sf.Color.BLUE):
+        Obstacle.__init__(self, pos, size, acc, ang_speed, color = sf.Color.BLUE)
 
         self.nn = nn
 
@@ -16,14 +16,19 @@ class SmartPod(Obstacle):
         self.collided = False
         self.fitness = 0
         self.ticks = 0
+        self.hunger = 0
 
         self.engines = [0, 0, 0]
         self.hasFiredMainEngine = False
+        self.dist = 0
 
-        self.senser_layers = 5
-        self.senser_dist = 20
+
+        self.immune = True
+        self.immune_ticks = 30
+        self.senser_layers = 3
+        self.senser_dist = 30
         self.angle_variance = 20
-        self.angle_span = 140
+        self.angle_span = 180
 
         self.calculateSenserPoints()
 
@@ -37,26 +42,19 @@ class SmartPod(Obstacle):
         self.senser_points = []
         for i in xrange(self.senser_layers):
             self.senser_points.append([])
-            for j in xrange(self.angle_span / self.angle_variance):
+            for j in xrange(int(self.angle_span / self.angle_variance)):
                 theta_p = (-self.theta - 90 * math.pi / 180.0 - self.angle_variance_rad * (self.angle_span / self.angle_variance / 2)) + self.angle_variance_rad * j
                 senser_pos = sf.Vector2(self.senser_origin.x + self.senser_dist * (i + 1) * math.cos(theta_p), self.senser_origin.y + self.senser_dist * (i + 1) * math.sin(theta_p))
                 self.senser_points[i].append(senser_pos)
 
-        PARAM.CIRCLES = [(self.senser_points[i][j].x, self.senser_points[i][j].y) for j in xrange(self.angle_span / self.angle_variance) for i in xrange(self.senser_layers)]
+        PARAM.CIRCLES = [(self.senser_points[i][j].x, self.senser_points[i][j].y) for j in xrange(int(self.angle_span / self.angle_variance)) for i in xrange(self.senser_layers)]
 
     def getSenserInfo(self, colliders):
-        _info = [0 for i in xrange(self.angle_span / self.angle_variance)]
-        self.calculateCorners()
-        self.calculateAxis()
+        self.calculateSenserPoints()
+        _info = [0 for i in xrange(int(self.angle_span / self.angle_variance))]
         for i in xrange(len(self.senser_points)):
             for j in xrange(len(self.senser_points[i])):
                 for c in colliders:
-                    try:
-                        if (math.fabs(c.acceleration) or math.fabs(c.angular_speed)):
-                            c.calculateCorners()
-                            c.calculateAxis()
-                    except:
-                        pass
                     if c.isPointInside(self.senser_points[i][j]):
                         ## SENSOR IS INSIDE SMTH;
                         ## ADD INFO TO _INFO ARRAY
@@ -68,6 +66,8 @@ class SmartPod(Obstacle):
 
     def reset(self, pos):
         Obstacle.reset(self, pos)
+        self.dist = 0
+        self.immune = True
         self.dead = False
         self.hit_target = False
         self.collided = False
@@ -75,6 +75,7 @@ class SmartPod(Obstacle):
         self.speed = 0
         self.engines = [0, 0, 0]
         self.hasFiredMainEngine = False
+        self.rect.fill_color = sf.Color.BLUE
 
     def switchEngine(self, index, state):
         if index == 2 and state:
@@ -85,7 +86,12 @@ class SmartPod(Obstacle):
     def addSpeed(self, s):
         self.speed += s
 
-    def update(self, g, ar, colliders = None):
+    def update(self, g, ar, goals = None):
+
+        if self.ticks >= self.immune_ticks:
+            self.immune = False
+            self.rect.fill_color = sf.Color.BLACK
+
         # This causes a "always on reverse" effect. Pretty Cool
         self.addSpeed(g)
 
@@ -104,45 +110,72 @@ class SmartPod(Obstacle):
         self.velocity.x = self.speed * math.sin(- self.rect.rotation * math.pi / 180)
         self.velocity.y = self.speed * math.cos(- self.rect.rotation * math.pi / 180)
 
+        self.dist += math.fabs(self.speed)
         # This causes a more "gravity-like" feeling. Weird behaviour when turning.
         # Gets weirder for higher levels of g.
+
         #self.velocity.y += g
 
         self.rect.move((self.velocity.x, self.velocity.y))
 
-        if math.sqrt( (PARAM.GOAL[0] - self.rect.position.x) ** 2 + (PARAM.GOAL[1] - self.rect.position.y) ** 2) <= 3:
-            self.hit_target = True
+        #if math.sqrt( (PARAM.GOAL[0] - self.rect.position.x) ** 2 + (PARAM.GOAL[1] - self.rect.position.y) ** 2) <= 3:
+            #self.hit_target = True
 
-        if self.rect.position.x > PARAM.WIDTH or self.rect.position.x < 0 or self.rect.position.y > PARAM.HEIGHT or self.rect.position.y < 0:
-            self.rect.position.x = 0 if self.rect.position.x < 0 else PARAM.WIDTH if self.rect.position.x > PARAM.WIDTH else self.rect.position.x
-            self.rect.position.y = 0 if self.rect.position.x < 0 else PARAM.HEIGHT if self.rect.position.x > PARAM.HEIGHT else self.rect.position.x
-            self.dead = True
+        self.calculateCorners()
+        self.calculateAxis()
 
-        if colliders == None:
-            return
+        self.ticks += 1
+        self.hunger += 1
+        self.fitness += 1 + math.fabs(self.speed) * 0.05
 
-        for c in colliders:
-            if self.collides(c):
-                self.dead = True
-                break
+
+        if self.ticks * 0.5 > self.dist and not self.immune:
+            self.die()
+
+
+        #if self.hunger > 300:
+        #    self.die()
+
+        if goals != None:
+            for g in goals:
+                if math.sqrt( (g.circle.position.x - self.rect.position.x) ** 2 + (g.circle.position.y - self.rect.position.y) ** 2) <= g.circle.radius:
+                    goals.remove(g)
+                    self.hunger -= 300
+                    if self.hunger < 0:
+                        self.hunger = 0
+
+
+    def die(self):
+        self.rect.fill_color = sf.Color.RED
+        self.dead = True
 
     def getFitness(self, GEN_TICKS):
-        distance_from_goal = math.sqrt( (PARAM.GOAL[0] - self.rect.position.x) ** 2 + (PARAM.GOAL[1] - self.rect.position.y) ** 2)
-        self.fitness = 1000.0 - distance_from_goal
+        #distance_from_goal = math.sqrt( (PARAM.GOAL[0] - self.rect.position.x) ** 2 + (PARAM.GOAL[1] - self.rect.position.y) ** 2)
+        self.fitness = self.dist #1000.0 - distance_from_goal
 
 
-        if self.dead:
-            self.fitness *= 0.95
+        #if self.dead:
+        #    self.fitness *= 0.50
 
         if not self.hasFiredMainEngine:
             self.fitness = 0
 
-        self.fitness +=  PARAM.TRAINING_TIME - GEN_TICKS
+        #self.fitness +=  PARAM.TRAINING_TIME - GEN_TICKS
 
         return self.fitness
 
     def draw(self, window):
         window.draw(self.rect)
+
+    def checkCollisions(self, colliders):
+        if self.immune:
+            return
+        for c in colliders:
+            if self.collides(c):
+                self.die()
+                if type(c) == type(self):
+                    c.die()
+                return
 
     def collides(self, entity):
         ## COLLISION METHOD VERSION 2.0
@@ -150,6 +183,10 @@ class SmartPod(Obstacle):
         ## VERSION HISTORY
         ## VERSION 1: LINE INTERSECTION CHECKS (SELF-DEVISED)
         ## VERSION 2: SEPARATING AXIS THEOREM
+
+        ## DONT CHECK FOR SELF-COLLISIONS
+        if entity == self:
+            return False
 
         ## CHECK IF YOUR DISTANCE TO ENTITY (Origin to Origin) IS
         ## BIG ENOUGH TO EVEN CONSIDER A COLLISION
@@ -163,21 +200,13 @@ class SmartPod(Obstacle):
             ## TOO FAR AWAY FOR A COLLISION TO BE EVEN CONSIDERED
             return False
 
-        ## CHECK IF ENTITY MOVES
-        entity_moves = (math.fabs(entity.acceleration) or math.fabs(entity.angular_speed))
+        ## CHECK IF ENTITY IS AND OBSTACLE
+        if type(entity) != type(self):
+            ## CHECK IF ENTITY MOVES
+            if math.fabs(entity.acceleration) or math.fabs(entity.angular_speed):
+                entity.calculateCorners()
+                entity.calculateAxis()
 
-        ## GET ALL 4 OWN CORNERS
-        self.calculateCorners()
-
-        ## GET ALL 2 OWN NON-PERPENDICULAR AXIS
-        self.calculateAxis()
-
-        ## IF ENTITY MOVES:
-        if entity_moves:
-            ## GET ALL 4 ENTITY CORNERS
-            entity.calculateCorners()
-            ## GET ALL 2 ENTITY NON-PERPENDICULAR AXIS
-            entity.calculateAxis()
 
         ## PROJECT ALL 8 CORNERS ONTO EACH OF THE 4 AXIS
         all_axis = self.axis + entity.axis
@@ -212,20 +241,14 @@ class SmartPod(Obstacle):
         ## MEANING COLLISION
         return True
 
-PLAYER_POD = SmartPod(NN(PARAM.NN_LAYOUT), sf.Vector2(PARAM.WIDTH / 2.0, PARAM.HEIGHT / 2.0), sf.Vector2(0.8, 8), 0.05, 3, sf.Color.CYAN)
+PLAYER_POD = SmartPod(NN(PARAM.NN_LAYOUT), (PARAM.WIDTH / 2.0, PARAM.HEIGHT / 2.0), (0.8, 8), 0.05, 3, sf.Color.CYAN)
 PLAYER_POD.calculateSenserPoints()
 
-SCREEN_OUTLINE = SmartPod(NN(PARAM.NN_LAYOUT), sf.Vector2(PARAM.WIDTH / 2.0, PARAM.HEIGHT / 2.0), sf.Vector2(PARAM.WIDTH - 2, PARAM.HEIGHT - 2), 0.0, 0.0)
 
-SCREEN_OUTLINE.rect.fill_color = sf.Color.TRANSPARENT
-SCREEN_OUTLINE.rect.outline_color = sf.Color.RED
-SCREEN_OUTLINE.rect.outline_thickness = 2
-
-
-TEST_POD_0 = SmartPod(NN(PARAM.NN_LAYOUT), sf.Vector2(100, 100), sf.Vector2(10, 200), 0.0, 0.0)
+TEST_POD_0 = SmartPod(NN(PARAM.NN_LAYOUT), (100, 100), (10, 200), 0.0, 0.0)
 TEST_POD_0.rect.rotation = -60
-TEST_POD_1 = SmartPod(NN(PARAM.NN_LAYOUT), sf.Vector2(300, 200), sf.Vector2(10, 100), 0.5, 0.5)
-TEST_POD_2 = SmartPod(NN(PARAM.NN_LAYOUT), sf.Vector2(PARAM.WIDTH / 2.0, PARAM.HEIGHT / 2.0), sf.Vector2(PARAM.WIDTH, PARAM.HEIGHT), -0.2, -0.2)
+TEST_POD_1 = SmartPod(NN(PARAM.NN_LAYOUT), (300, 200), (10, 100), 0.5, 0.5)
+TEST_POD_2 = SmartPod(NN(PARAM.NN_LAYOUT), (PARAM.WIDTH / 2.0, PARAM.HEIGHT / 2.0), (PARAM.WIDTH, PARAM.HEIGHT), -0.2, -0.2)
 TEST_POD_2.rect.fill_color = sf.Color.TRANSPARENT
 TEST_POD_2.rect.outline_thickness = 2
 
@@ -234,3 +257,6 @@ TEST_PODS = [TEST_POD_0]
 for tp in TEST_PODS:
     tp.calculateCorners()
     tp.calculateAxis()
+
+def getNextPosition():
+    pass
