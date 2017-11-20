@@ -1,7 +1,7 @@
 from UItext import *
 
 class Button(object):
-    def __init__(self, rest_color, hover_color, text, position, size):
+    def __init__(self, rest_color, hover_color, text, position, size, _id = 0):
         self.rest_color = rest_color
         self.hover_color = hover_color
         self.rect = sf.RectangleShape(size)
@@ -11,10 +11,11 @@ class Button(object):
         self.rect.position = position
 
         self.text = text
-
+        self.text.setPosition(self.rect.position)
         self.state = True
         self.hovered = False
 
+        self.scene_id = _id
 
     def isHovered(self, mouse_pos):
         if(mouse_pos.x >= self.rect.position.x - self.rect.size.x / 2.0 and mouse_pos.x <= self.rect.position.x + self.rect.size.x / 2.0 and mouse_pos.y >= self.rect.position.y - self.rect.size.y / 2.0 and mouse_pos.y <= self.rect.position.y + self.rect.size.y / 2.0):
@@ -37,5 +38,3 @@ class Button(object):
                 self.rect.fill_color = self.rest_color
                 window.draw(self.rect)
                 self.text.render(window)
-
-test_button = Button(sf.Color.BLACK, sf.Color.RED, test_txt, sf.Vector2(50, 50), sf.Vector2(60, 12))

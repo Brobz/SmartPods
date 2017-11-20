@@ -1,6 +1,6 @@
 from app import *
 
-"""
+
 def natural_selection(brains):
     # CROSSOVER
     if PARAM.RANDOM_START:
@@ -38,7 +38,12 @@ def natural_selection(brains):
 
     return new_pod
 
+
+
 # SET GLOBAL VARIABLES
+WINDOW = sf.RenderWindow(sf.VideoMode(PARAM.WIDTH, PARAM.HEIGHT), unicode("SmartPods"))
+WINDOW.framerate_limit = PARAM.MAX_FRAMERATE
+WINDOW.key_repeat_enabled = False
 PODS = [SmartPod(NN(PARAM.NN_LAYOUT), (PARAM.START_POSITION[0], PARAM.START_POSITION[1]), (PARAM.POD_SIZE[0], PARAM.POD_SIZE[1]), PARAM.POD_ACCELERATION, PARAM.POD_ANGULAR_SPEED) for i in xrange(PARAM.POD_POPULATION)]
 TRAINING_PODS = list(PODS)
 DEAD_PODS = []
@@ -56,6 +61,7 @@ Serializer.MAPS[PARAM.MAP_INDEX].addGoal(TEMP_GOAL)
 
 BEST_FITNESSES = [0 for i in xrange(PARAM.POD_POPULATION / 2)]
 BEST_BRAINS = [copy.deepcopy(TRAINING_PODS[i].nn.weights) for i in xrange(PARAM.POD_POPULATION / 2)]
+
 
 SANDBOX_PODS = []
 SANDBOX_CIRCLES = []
@@ -111,9 +117,10 @@ def evolve():
         p.checkCollisions(Serializer.MAPS[PARAM.MAP_INDEX].obstacles) #+ list(set(TRAINING_PODS) - set(looped_pods)))
 
     # Fixed, randomized goal population
+    """
     while len(Serializer.MAPS[PARAM.MAP_INDEX].goals) < PARAM.GOAL_POPULATION:
         Serializer.MAPS[PARAM.MAP_INDEX].goals.append(Goal((random.randrange(100, 700), random.randrange(100, 400)), 5, 0.0, sf.Color.RED))
-
+    """
 
     for p in TRAINING_PODS:
         p.draw(WINDOW)
@@ -148,14 +155,8 @@ def sandbox_loop():
         for i in xrange(len(SANDBOX_CIRCLES)):
             SANDBOX_CIRCLES[i].position = PARAM.CIRCLES[i]
             WINDOW.draw(SANDBOX_CIRCLES[i])
-"""
+
 TICKS = 0
-
-APP = App([MAIN_MENU_SCENE, SELECT_EVOLUTION_SCENE, EVOLVE_SCENE, SELECT_EDIT_SCENE, EDIT_SCENE, SANDBOX_SCENE])
-
-APP.run()
-
-"""
 
 while WINDOW.is_open:
 
@@ -230,10 +231,6 @@ while WINDOW.is_open:
         sandbox_loop()
 
 
-    test_button.update(WINDOW, sf.Mouse.get_position(WINDOW))
-    test_button.render(WINDOW)
-
-
     START_POINT.draw(WINDOW)
     TEMP_GOAL.draw(WINDOW)
 
@@ -246,7 +243,7 @@ while WINDOW.is_open:
 
     TICKS += 1
 
-"""
+
 
 
 Serializer.dump()

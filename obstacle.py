@@ -40,10 +40,10 @@ class Obstacle(object):
         self.bot_right_corner_x = self.rect.position.x + self.rect.size.x / 2.0 * math.cos(self.theta) + self.rect.size.y / 2.0 * math.sin(self.theta)
         self.bot_right_corner_y = self.rect.position.y - self.rect.size.x / 2.0 * math.sin(self.theta) + self.rect.size.y / 2.0 * math.cos(self.theta)
 
-        self.bot_left_corner_x = self.rect.position.x - self.rect.size.x / 2.0 * math.cos(self.theta) + self.rect.size.y / 2.0 * math.sin(self.theta)
-        self.bot_left_corner_y = self.rect.position.y + self.rect.size.x / 2.0 * math.sin(self.theta) + self.rect.size.y / 2.0 * math.cos(self.theta)
+        #self.bot_left_corner_x = self.rect.position.x - self.rect.size.x / 2.0 * math.cos(self.theta) + self.rect.size.y / 2.0 * math.sin(self.theta)
+        #self.bot_left_corner_y = self.rect.position.y + self.rect.size.x / 2.0 * math.sin(self.theta) + self.rect.size.y / 2.0 * math.cos(self.theta)
 
-        self.corners = [sf.Vector2(self.top_left_corner_x, self.top_left_corner_y), sf.Vector2(self.top_right_corner_x, self.top_right_corner_y), sf.Vector2(self.bot_right_corner_x, self.bot_right_corner_y), sf.Vector2(self.bot_left_corner_x, self.bot_left_corner_y)]
+        self.corners = [sf.Vector2(self.top_left_corner_x, self.top_left_corner_y), sf.Vector2(self.top_right_corner_x, self.top_right_corner_y), sf.Vector2(self.bot_right_corner_x, self.bot_right_corner_y)]# sf.Vector2(self.bot_left_corner_x, self.bot_left_corner_y)]
 
     def calculateAxis(self):
         self.AB_axis = sf.Vector2(self.top_right_corner_x - self.top_left_corner_x, self.top_right_corner_y - self.top_left_corner_y)
@@ -99,10 +99,10 @@ class Obstacle(object):
         ## CHECK IF YOUR DISTANCE TO ENTITY (Origin to Origin) IS
         ## BIG ENOUGH TO EVEN CONSIDER A COLLISION
 
-        _dist = math.sqrt( (entity.rect.position.x - self.rect.position.x) ** 2 + (entity.rect.position.y - self.rect.position.y) ** 2)
+        _dist = (entity.rect.position.x - self.rect.position.x) ** 2 + (entity.rect.position.y - self.rect.position.y) ** 2
 
         # GET RADIUSES OF RECTS (DIAGONAL / 2)
-        r1, r2 = math.sqrt(self.rect.size.x ** 2 + self.rect.size.y ** 2) / 2.0, math.sqrt(entity.rect.size.x ** 2 + entity.rect.size.y ** 2) / 2.0
+        r1, r2 = self.rect.size.x ** 2 + self.rect.size.y ** 2 / 2.0, entity.rect.size.x ** 2 + entity.rect.size.y ** 2 / 2.0
 
         if _dist >  r1 + r2:
             ## TOO FAR AWAY FOR A COLLISION TO BE EVEN CONSIDERED
@@ -124,7 +124,7 @@ class Obstacle(object):
             ## GET ALL 2 ENTITY NON-PERPENDICULAR AXIS
             entity.calculateAxis()
 
-        ## PROJECT ALL 8 CORNERS ONTO EACH OF THE 4 AXIS
+        ## PROJECT ALL 6 CORNERS ONTO EACH OF THE 4 AXIS
         all_axis = self.axis + entity.axis
 
         projected_corners = []
@@ -157,28 +157,13 @@ class Obstacle(object):
         ## MEANING COLLISION
         return True
 
-
-SCREEN_OUTLINE = Obstacle((PARAM.WIDTH / 2.0, PARAM.HEIGHT / 2.0), (PARAM.WIDTH - 3, PARAM.HEIGHT - 3), 0.0, 0.0)
-SCREEN_OUTLINE.rect.fill_color = sf.Color.TRANSPARENT
-SCREEN_OUTLINE.rect.outline_color = sf.Color.RED
-SCREEN_OUTLINE.rect.outline_thickness = 3
-
+TRAINING_OBSTACLES = []
+"""
 TRAINING_OBSTACLE_0 = Obstacle((PARAM.WIDTH  / 2.0, - 20), (PARAM.WIDTH, 50), 0.0, 0.0)
 TRAINING_OBSTACLE_1 = Obstacle((PARAM.WIDTH  / 2.0, PARAM.HEIGHT + 20), (PARAM.WIDTH, 50), 0.0, 0.0)
 TRAINING_OBSTACLE_2 = Obstacle((- 20, PARAM.HEIGHT  / 2.0), (50, PARAM.HEIGHT), 0.0, 0.0)
 TRAINING_OBSTACLE_3 = Obstacle((PARAM.WIDTH + 20, PARAM.HEIGHT  / 2.0), (50, PARAM.HEIGHT), 0.0, 0.0)
-TRAINING_OBSTACLE_4 = Obstacle((PARAM.WIDTH / 2.0 - 200, PARAM.HEIGHT  / 2.0), (10, PARAM.HEIGHT), 0.0, 0.0)
-TRAINING_OBSTACLE_4.rect.rotation = -45
-TRAINING_OBSTACLE_5 = Obstacle((PARAM.WIDTH / 2.0 + 200, PARAM.HEIGHT  / 2.0 + 100), (10, PARAM.HEIGHT), 0.0, 0.0)
-TRAINING_OBSTACLE_5.rect.rotation = 80
-TRAINING_OBSTACLE_6 = Obstacle((PARAM.WIDTH / 2.0, PARAM.HEIGHT  / 2.0), (10, PARAM.WIDTH + 200), 0.0, 1.5)
-TRAINING_OBSTACLE_6.rect.rotation = -35
-"""
-TRAINING_OBSTACLE_0 = Obstacle((PARAM.WIDTH  / 2.0, PARAM.HEIGHT / 2.0 - 200), (PARAM.WIDTH, 10), 0.0, 0.0)
-TRAINING_OBSTACLE_1 = Obstacle((PARAM.WIDTH  / 2.0, PARAM.HEIGHT / 2.0 + 200), (PARAM.WIDTH, 10), 0.0, 0.0)
-TRAINING_OBSTACLE_2 = Obstacle((PARAM.WIDTH / 2.0 - 300, PARAM.HEIGHT  / 2.0), (10, PARAM.HEIGHT), 0.0, 0.0)
-TRAINING_OBSTACLE_3 = Obstacle((PARAM.WIDTH / 2.0 + 300, PARAM.HEIGHT  / 2.0), (10, PARAM.HEIGHT), 0.0, 0.0)
-"""
+
 
 # TRAINING_OBSTACLES = [TRAINING_OBSTACLE_0, TRAINING_OBSTACLE_1, TRAINING_OBSTACLE_2, TRAINING_OBSTACLE_3, TRAINING_OBSTACLE_6]
 TRAINING_OBSTACLES = [TRAINING_OBSTACLE_0, TRAINING_OBSTACLE_1, TRAINING_OBSTACLE_2, TRAINING_OBSTACLE_3]
@@ -187,3 +172,4 @@ for to in TRAINING_OBSTACLES:
     to.calculateCorners()
     to.calculateAxis()
     to.getParams()
+"""

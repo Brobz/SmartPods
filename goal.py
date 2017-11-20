@@ -1,31 +1,25 @@
-import parameters as PARAM
-from nn import *
-import math
-from sfml import sf
+from point import *
 
-class Goal(object):
+class Goal(Point):
     def __init__(self, pos, radius, acc, color = sf.Color.BLACK):
+        Point.__init__(self, pos, radius, color)
 
-        self.params = [pos, radius, acc]
+
+        self.circle.fill_color = sf.Color.RED
 
         self.acceleration = acc
 
         self.speed = 0
         self.velocity = sf.Vector2(0, 0)
 
-        self.circle = sf.CircleShape(radius)
-        self.circle.origin = ((radius / 2.0, radius / 2.0))
-        self.circle.fill_color = sf.Color.RED
-        self.circle.outline_color = color
-        self.circle.outline_thickness = 1
-        self.circle.position = pos
+        self.params = [pos, radius, acc]
 
-        self.ID = 1
+        self.ID = 100
 
 
     def isPointInside(self, m):
-        _dist = math.sqrt( (m.x - self.circle.position.x) ** 2 + (m.y - self.circle.position.y) ** 2 )
-        if _dist < self.circle.radius + 1:
+        _dist = (m.x - self.circle.position.x) ** 2 + (m.y - self.circle.position.y) ** 2
+        if _dist <= (self.circle.radius * 1.2) ** 2:
             return True
 
         return False
@@ -55,7 +49,5 @@ class Goal(object):
 
         self.circle.move((self.velocity.x, self.velocity.y))
 
-    def draw(self, window):
-        window.draw(self.circle)
-
+TEMP_GOAL = Goal((PARAM.GOAL[0], PARAM.GOAL[1]), 5, 0, sf.Color.RED)
 GOALS = [Goal((random.randrange(100, 700), random.randrange(100, 400)), 5, 0.0, sf.Color.RED) for i in xrange(PARAM.GOAL_POPULATION)]

@@ -11,12 +11,12 @@ class UIText(object):
         self.color = color
         self.label.color = self.color
         self.position = position
-        self.label.position = self.position.x, self.position.y
         self.size = size
         self.label.character_size = self.size
         self.hover_color = sf.Color.CYAN
-        self.label.origin = (self.size / 2.0 * len(text), self.size / 2.0)
 
+        self.centerText()
+        self.setPosition(self.position)
 
     def render(self, window, hovered = False):
         if(hovered):
@@ -24,4 +24,18 @@ class UIText(object):
         window.draw(self.label)
         self.label.color = self.color
 
-test_txt = UIText(UIText.FONT, "TEST", sf.Color.GREEN, sf.Vector2(50, 50), 10)
+    def setPosition(self, new_pos):
+        self.position = new_pos
+        self.label.position = self.position
+
+    def setText(self, new_text):
+        self.text = new_text
+        self.label.string = unicode(self.text)
+
+    def setSize(self, _size):
+        self.size = _size
+        self.label.character_size = self.size
+        
+    def centerText(self):
+        text_rect = self.label.local_bounds
+        self.label.origin = (text_rect.left + text_rect.width / 2.0, text_rect.top + text_rect.height / 2.0)

@@ -3,7 +3,7 @@ import pickle, sys, time
 
 
 class Serializer(object):
-    MAPS_INFO = {0 : {"OBS_PARAMS" : DEFAULT_MAP.getObsParams(), "GOALS_PARAMS" : DEFAULT_MAP.getGoalsParams()} }
+    MAPS_INFO = [{"OBS_PARAMS" : DEFAULT_MAP.getObsParams(), "GOALS_PARAMS" : DEFAULT_MAP.getGoalsParams()}]
     BRAINS_INFO = []
     PARAMS_INFO = []
 
@@ -12,9 +12,17 @@ class Serializer(object):
     MAPS = []
 
     @classmethod
+    def addMapsInfo(cls, _map):
+        cls.MAPS_INFO.append({"OBS_PARAMS" : _map.getObsParams(), "GOALS_PARAMS" : _map.getGoalsParams()})
+        cls.makeMaps()
+
+
+    @classmethod
     def dump(cls, first = False):
         if not first:
-            cls.MAPS_INFO = {0 : {"OBS_PARAMS" : cls.MAPS[0].getObsParams(), "GOALS_PARAMS" : cls.MAPS[0].getGoalsParams()} }
+            for i in xrange(len(cls.MAPS)):
+                cls.MAPS_INFO[i] = {"OBS_PARAMS" : cls.MAPS[i].getObsParams(), "GOALS_PARAMS" : cls.MAPS[i].getGoalsParams()}
+
             cls.SAVES = {"MAPS_INFO" : cls.MAPS_INFO, "BRAINS_INFO" : cls.BRAINS_INFO, "PARAMS_INFO" : cls.PARAMS_INFO}
 
         with open("saves.picle", "wb") as file:
@@ -41,10 +49,10 @@ class Serializer(object):
     @classmethod
     def makeMaps(cls):
         cls.MAPS = []
-        for key in cls.SAVES["MAPS_INFO"]:
+        for i in xrange(len(cls.MAPS_INFO)):
             new_map = Map([], [])
-            new_map.makeObs(cls.SAVES["MAPS_INFO"][key]["OBS_PARAMS"])
-            new_map.makeGoals(cls.SAVES["MAPS_INFO"][key]["GOALS_PARAMS"])
+            new_map.makeObs(cls.SAVES["MAPS_INFO"][i]["OBS_PARAMS"])
+            new_map.makeGoals(cls.SAVES["MAPS_INFO"][i]["GOALS_PARAMS"])
             cls.MAPS.append(new_map)
 
 Serializer.load()

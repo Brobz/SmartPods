@@ -8,9 +8,6 @@ class SmartPod(Obstacle):
 
         self.nn = nn
 
-        self.mutation_rate = random.random()
-        self.cross_rate = random.random()
-
         self.dead = False
         self.hit_target = False
         self.collided = False
@@ -25,17 +22,17 @@ class SmartPod(Obstacle):
 
         self.immune = True
         self.immune_ticks = 30
-        self.senser_layers = 3
-        self.senser_dist = 30
-        self.angle_variance = 20
-        self.angle_span = 180
+        self.senser_layers = 2
+        self.senser_dist = 25
+        self.angle_variance = 40
+        self.angle_span = 120
+        self.angle_variance_rad = self.angle_variance * math.pi / 180.0
 
         self.calculateSenserPoints()
 
-        self.ID = -1
+        self.ID = 0
 
     def calculateSenserPoints(self):
-        self.angle_variance_rad = self.angle_variance * math.pi / 180.0
         self.theta = - self.rect.rotation * math.pi / 180.0
         self.senser_origin = sf.Vector2(self.rect.position.x - math.sin(self.theta) * self.rect.size.y / 2.0, self.rect.position.y - math.cos(self.theta) * self.rect.size.y  / 2.0)
 
@@ -47,7 +44,8 @@ class SmartPod(Obstacle):
                 senser_pos = sf.Vector2(self.senser_origin.x + self.senser_dist * (i + 1) * math.cos(theta_p), self.senser_origin.y + self.senser_dist * (i + 1) * math.sin(theta_p))
                 self.senser_points[i].append(senser_pos)
 
-        PARAM.CIRCLES = [(self.senser_points[i][j].x, self.senser_points[i][j].y) for j in xrange(int(self.angle_span / self.angle_variance)) for i in xrange(self.senser_layers)]
+        if PARAM.HUMAN_CONTROLLED_POD and PARAM.SHOW_SANDBOX_CIRCLES:
+            PARAM.CIRCLES = [(self.senser_points[i][j].x, self.senser_points[i][j].y) for j in xrange(int(self.angle_span / self.angle_variance)) for i in xrange(self.senser_layers)]
 
     def getSenserInfo(self, colliders):
         self.calculateSenserPoints()
@@ -58,7 +56,7 @@ class SmartPod(Obstacle):
                     if c.isPointInside(self.senser_points[i][j]):
                         ## SENSOR IS INSIDE SMTH;
                         ## ADD INFO TO _INFO ARRAY
-                        if math.fabs(_info[j]) < (len(self.senser_points) / (i + 1.0)) * 10:
+                        if _info[j] ** 2 < ((len(self.senser_points) / (i + 1.0)) * 10) ** 2:
                             _info[j] = (len(self.senser_points) / (i + 1.0)) * 10 * c.ID
 
         #print _info
@@ -92,6 +90,10 @@ class SmartPod(Obstacle):
             self.immune = False
             self.rect.fill_color = sf.Color.BLACK
 
+        # DEATH BY TIME
+        #if self.ticks > 500:
+        #    self.die()
+
         # This causes a "always on reverse" effect. Pretty Cool
         self.addSpeed(g)
 
@@ -104,13 +106,13 @@ class SmartPod(Obstacle):
 
         self.addSpeed(-self.speed * ar)
 
-        if math.fabs(self.speed) < 0.1 and not self.engines[2]:
+        if self.speed ** 2 < 0.01 and not self.engines[2]:
               self.speed = 0
 
         self.velocity.x = self.speed * math.sin(- self.rect.rotation * math.pi / 180)
         self.velocity.y = self.speed * math.cos(- self.rect.rotation * math.pi / 180)
 
-        self.dist += math.fabs(self.speed)
+        self.dist += self.speed ** 2
         # This causes a more "gravity-like" feeling. Weird behaviour when turning.
         # Gets weirder for higher levels of g.
 
@@ -118,40 +120,28 @@ class SmartPod(Obstacle):
 
         self.rect.move((self.velocity.x, self.velocity.y))
 
-        #if math.sqrt( (PARAM.GOAL[0] - self.rect.position.x) ** 2 + (PARAM.GOAL[1] - self.rect.position.y) ** 2) <= 3:
-            #self.hit_target = True
-
-        self.calculateCorners()
-        self.calculateAxis()
+        for g in goals:
+            if g.isPointInside(self.senser_origin):
+                self.die()
 
         self.ticks += 1
-        self.hunger += 1
-        self.fitness += 1 + math.fabs(self.speed) * 0.05
 
-
-        if self.ticks * 0.5 > self.dist and not self.immune:
-            self.die()
+        if not PARAM.HUMAN_CONTROLLED_POD:
+            if self.ticks * 0.5 > self.dist and not self.immune:
+                self.die()
 
 
         #if self.hunger > 300:
         #    self.die()
 
-        if goals != None:
-            for g in goals:
-                if math.sqrt( (g.circle.position.x - self.rect.position.x) ** 2 + (g.circle.position.y - self.rect.position.y) ** 2) <= g.circle.radius:
-                    goals.remove(g)
-                    self.hunger -= 300
-                    if self.hunger < 0:
-                        self.hunger = 0
-
-
     def die(self):
         self.rect.fill_color = sf.Color.RED
         self.dead = True
 
-    def getFitness(self, GEN_TICKS):
-        #distance_from_goal = math.sqrt( (PARAM.GOAL[0] - self.rect.position.x) ** 2 + (PARAM.GOAL[1] - self.rect.position.y) ** 2)
-        self.fitness = self.dist #1000.0 - distance_from_goal
+    def getFitness(self, GEN_TICKS = None):
+        #distance_from_goal = (PARAM.GOAL[0] - self.rect.position.x) ** 2 + (PARAM.GOAL[1] - self.rect.position.y) ** 2
+        distance_from_goal = (PARAM.GOAL[0] - self.rect.position.x) ** 2
+        self.fitness = 1000.0 ** 2 - distance_from_goal
 
 
         #if self.dead:
@@ -160,6 +150,7 @@ class SmartPod(Obstacle):
         if not self.hasFiredMainEngine:
             self.fitness = 0
 
+        #self.fitness += self.ticks * 1000
         #self.fitness +=  PARAM.TRAINING_TIME - GEN_TICKS
 
         return self.fitness
@@ -191,22 +182,25 @@ class SmartPod(Obstacle):
         ## CHECK IF YOUR DISTANCE TO ENTITY (Origin to Origin) IS
         ## BIG ENOUGH TO EVEN CONSIDER A COLLISION
 
-        _dist = math.sqrt( (entity.rect.position.x - self.rect.position.x) ** 2 + (entity.rect.position.y - self.rect.position.y) ** 2)
+        _dist = (entity.rect.position.x - self.rect.position.x) ** 2 + (entity.rect.position.y - self.rect.position.y) ** 2
 
         # GET RADIUSES OF RECTS (DIAGONAL / 2)
-        r1, r2 = math.sqrt(self.rect.size.x ** 2 + self.rect.size.y ** 2) / 2.0, math.sqrt(entity.rect.size.x ** 2 + entity.rect.size.y ** 2) / 2.0
+        r1, r2 = self.rect.size.x ** 2 + self.rect.size.y ** 2 / 2.0, entity.rect.size.x ** 2 + entity.rect.size.y ** 2 / 2.0
 
         if _dist >  r1 + r2:
             ## TOO FAR AWAY FOR A COLLISION TO BE EVEN CONSIDERED
             return False
 
-        ## CHECK IF ENTITY IS AND OBSTACLE
+        ## CHECK IF ENTITY IS AN OBSTACLE
         if type(entity) != type(self):
             ## CHECK IF ENTITY MOVES
-            if math.fabs(entity.acceleration) or math.fabs(entity.angular_speed):
+            if entity.acceleration != 0 or entity.angular_speed != 0:
                 entity.calculateCorners()
                 entity.calculateAxis()
 
+        ## CALCULATE OWN CORNES AND AXIS
+        self.calculateCorners()
+        self.calculateAxis()
 
         ## PROJECT ALL 8 CORNERS ONTO EACH OF THE 4 AXIS
         all_axis = self.axis + entity.axis
